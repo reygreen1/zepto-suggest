@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title>suggestion-zepto</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link href="" rel="stylesheet">
+<style type="text/css">
+	html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{border:0;font-size:100%;font:inherit;margin:0;padding:0;vertical-align:baseline}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}ol,ul{list-style:none}blockquote,q{quotes:none}table{border-collapse:collapse;border-spacing:0}input{border:0;margin:0;padding:0}body{background:#f0f1f1;color:#777;font-size:14px;font-family:"Microsoft yahei",Hei,arial,sans-serif}a{color:#36c;text-decoration:none}h1,h2{color:#000}
+</style>
+<style type="text/css">
+	input{
+		outline: none;
+	}
+	.search{
+		display: -webkit-box;
+		padding : 5px;
+		z-index: 99;
+	}
+	.search-input{
+		-webkit-box-flex:1;
+		display: block;
+		border: 1px solid #84b890;
+		border-radius: 2px 0 0 2px;
+	}
+	.sug-mask{
+		position: relative;
+		display: -webkit-box;
+		background: #fff;
+		z-index: 100;
+	}
+	.sug-mask input{
+		display: block;
+		-webkit-box-flex:1;
+		width: 100%;
+		height: 40px;
+		padding: 0 15px;
+		font-size: 16px;
+	}
+	.sug{
+		position: absolute;
+		top: 40px;
+		left: 0;
+		width: 100%;
+		-webkit-box-sizing:border-box;
+		border: 1px solid #84b890;
+		background-color: #fff;
+	}
+	.sug .sug-item{
+		position: relative;
+		padding: .5em 40px .5em 10px;
+		border-bottom: 1px solid #eee;
+	}
+	.sug .sug-plus{
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 52px;
+		height:100%;
+	}
+	.sug .sug-plus:after {
+		content: '+';
+		color: #b4b4b4;
+		line-height: 1;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		margin-top: -13px;
+		margin-left: -8px;
+		font-size: 24px;
+	}
+	.sug .sug-button {
+		background: #f7f7f7;
+		height: 33px;
+		line-height: 33px;
+	}
+	.sug .sug-clear,.sug .sug-close {
+		padding: 0 15px;
+		cursor: pointer;
+	}
+	.sug .sug-clear{
+		float: left;
+		border-right: 1px solid #eee;
+	}
+	.sug .sug-close{
+		float: right;
+		border-left: 1px solid #eee;
+	}
+	.sug-quickdel{
+		display: -webkit-box;
+		width: 20px;
+		height: 20px;
+		padding: 10px;
+		background: url() no-repeat;
+	}
+	.search-button{
+		border: 1px solid #84b890;
+		border-left: 0;
+		border-radius: 0 2px 2px 0;
+	}
+	.search-button input{
+		padding: 0 10px;
+		line-height: 40px;
+		font-size: 16px;
+		font-weight: bold;
+		vertical-align: middle;
+		-webkit-appearance:none;
+	}
+</style>
+</head>
+<body>
+    <form action="http://www.so.com/s" method="get" target="_self">
+    	<div class="search">
+    		<div class="search-input">
+    			<div class="sug-mask">
+    				<input type="text" id="input" name="q" placeholder="请输入小说名称" autocomplete="off">
+    				<div class="sug">
+    					<div class="sug-list">
+    						<div class="sug-item">
+    							<i>1</i>111
+    							<span class="sug-plus"></span>
+    						</div>
+    						<div class="sug-item">
+    							222<i>1</i>
+    							<span class="sug-plus"></span>
+    						</div>
+    						<div class="sug-item">
+    							3<i>1</i>333
+    							<span class="sug-plus"></span>
+    						</div>
+    					</div>
+    					<div class="sug-button">
+    						<span class="sug-clear">清空历史记录</span>
+    						<span class="sug-close">关闭</span>
+    					</div>
+    				</div>
+    				<div class="sug-quickdel"></div>
+    			</div>
+    		</div>
+    		<div class="search-button">
+    			<input type="submit" value="搜索">
+    		</div>
+    	</div>
+    </form>
+    <script type="text/javascript" src="./suggest.js"></script>
+</body>
+</html>
