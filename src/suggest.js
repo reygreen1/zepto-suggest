@@ -4,7 +4,7 @@
  * @date    2014-08-26 15:10:02
  * @version 1.0.0
  */
-(function($, win){
+(function($, win, undefined){
 	/* 全局标识 */
 	var guid  = 0,
 		TRUE  = true,
@@ -13,6 +13,8 @@
 
 	var CustEvents = ['afterInitDom'];
 
+	/* 请求结果缓存，多实例可共用 */
+	var _cache = {},
 	/* 公共方法 */
 	htmlEscape = function(s) {
         if(s == NULL) return '';
@@ -23,12 +25,13 @@
         return tplStr.replace(/{([^}]*)}/g, function ($0, $1) {
             return data[$1] == NULL ? '' : htmlEscape(data[$1]);
         });
-    },
+    };
     
 
 	function Suggest( conf ){
 		this._init( conf );
 	}
+
 	Suggest.prototype = {
 		/* 更正构造函数 */
 		constructor : Suggest,
@@ -39,15 +42,13 @@
 		_init : function( U_conf ){
 			/* 默认配置 */
 			var D_conf = {
-				/* 是否显示input框快速删除按钮 */
-				showQuickDel : true,
 				elements : {
 					/* 放置suggest的wrap */
 					wrap : NULL,
 					/* 输入框 */
 					input : NULL,
 					/* 要提交的form表单 */
-					form : NUll,
+					form : NULL,
 					/* 清空历史记录的按钮 */
 					history : NULL,
 					/* 关闭suggest列表的按钮 */
@@ -71,10 +72,33 @@
     							'<span class="sug-plus"></span>'+
     						'</div>',
 					/* 历史记录结构模板 */
-					history : ''
-				}
+					history : '<div class="sug-item" data-item="{value}">'+
+    							'{value}'+
+    							'<span class="sug-plus"></span>'+
+    						'</div>'
+				},
+				/* 是否选择快速删除按钮 */
+				showQuickDel : TRUE,
+				/* 远程加载数据的接口url */
+				requestUrl : 'http://gmu.baidu.com/demo/data/suggestion.php',
+				/* 请求url中query字符串的键值，如"&kw=123"中的kw，通过它可以灵活适配服务端接口*/
+				requestQueryKey : 'wd',
+				/* 请求url中callback回调的键值，如"&cb=zepto_suggest_123"中的cb，通过它可以灵活适配服务端接口*/
+				requestCallbackKey : 'cb',
+				/* 请求url中需要额外添加的参数， 通过它可以灵活适配服务端接口*/
+				requestParam : NULL,
+				/* 数据请求处理的间隔时间 */
+				renderDelayTime : 300,
+				/* 是否显示input框快速删除按钮 */
+				showQuickDel : TRUE,
+				/* localstorage分隔符 */
+				localStorageKey : ',',
+				/* 清除历史记录是否提示确认框 */
+				confirmClearHistory : TRUE,
+				/* 是否缓存请求的查询结果 */
+				isCache : TRUE
 			};
-			this.config = $.extend( true , D_conf , U_conf );
+			this.config = $.extend( TRUE , D_conf , U_conf );
 			/* 初始化DOM */
 			this._initDom();
 			/* 初始化事件绑定 */
@@ -97,12 +121,10 @@
 				sugClassTop = NULL;
 
 			/* 输入框 */
-			!$input && $input = t.El('input',$('#input'));
+			!$input && ($input = t.El('input',$('#input')));
 			$input.attr('autocomplete','off');
-			/* 快速删除按钮 */
-			t.config.showQuickDel && ($input.parent().append('<div class="sug-quickdel"></div>'));
 			/* form表单 */
-			!$form && $form = (t.El('form',$input.closet('form')));
+			!$form && ($form = (t.El('form',$input.closest('form'))));
 
 			/* 修正wrap，suggest的外层包裹，可以用户指定，默认在input上外创建一个sug-mask的div */
 			if ($wrap) {
@@ -110,11 +132,18 @@
 				$wrap.append(sugTmpl);
 			}else{
 				/* wrap不存在，默认在input后放置一个suggest list */
-				var $wrap = $input.wrap('<div class="sug-mask"></div>');
+				$input.wrap($wrap = $('<div class="sug-mask"></div>'));
+				t.El('wrap',$wrap);
 				$wrap.css({'position':'relative'});
-				sugClassTop = $input.height() + (parseInt( t.$wrap.css( 'top' ), 10 ) || 0);
+				sugClassTop = $input.height() + (parseInt( $wrap.css( 'top' ), 10 ) || 0);
+				$wrap.append(sugTmpl);
 			}
+
+			/* 快速删除按钮 */
+			t.config.showQuickDel && ($input.parent().append(t.El('quickdel',$('<div class="sug-quickdel"></div>'))));
+
 			/* suggest list */
+			t.El('sug',$wrap.find('.sug'));
 			$sugList = t.El('list',$wrap.find('.sug-list'));
 			sugClassTop && $sugList.css('top',sugClassTop);
 
@@ -139,10 +168,10 @@
 				$list = t.El('list');
 			/* input的相关事件绑定 */
 			$input.on('focus',function(){
-				!t.isShow() && t._renderSuggestList();
+				!t.isShow() && t._renderList();
 			});
 			$input.on('input',function(){
-				t._renderSuggestList();
+				t._renderList();
 			});
 
 			/* 历史记录 */
@@ -201,17 +230,55 @@
 		/*=================视图操作=====================*/
 
 		/**
-		 * _renderSuggestList 渲染suggest列表
+		 * _renderList 渲染suggest列表
+		 * @param callback{Function} 回调函数
 		 * @return suggest{Suggest} 当前实例
 		 */
-		_renderSuggestList : function(){
-			return this;
+		_renderList : function(){
+			var t = this,
+				kw;
+
+			win.clearTimeout(t.renderTimeout);
+			t.renderTimeout = win.setTimeout(function(){
+				kw = t._getKeyword();
+				if( kw ){
+					/* 加载远程数据 */
+					t._getRemoteData( t._renderSuggestList );
+				}else{
+					/* 没有关键字加载默认数据（历史记录） */
+					t._renderSuggestList( kw , t.history() , t.config.template.history );
+				}
+			}, t.renderDelayTime);
+
+			return t;
 		},
 		/**
-		 * _renderSuggestItem 对suggest结果中的单一条目进行渲染
-		 * @return html{String} 返回经过数据替换的html字符串
+		 * _renderSuggestList 根据data渲染suggest列表
+		 * @param kw{String} 查询关键字
+		 * @param data{Array} suggest数据集
+		 * @param tpl{String} 模板字符串
+		 * @return suggest{Suggest} 当前实例
 		 */
-		_renderSuggestItem : function(){
+		_renderSuggestList : function( kw , data , tpl ){
+			var t = this,
+				$list = t.El('list'),
+				htmlStr = [],
+				regExp = '/'+kw+'/g',
+				regTarget = '<i>'+kw+'</i>',
+				i,len;
+
+			if( !data || !data.length ){
+				t.hide();
+				return t;
+			}
+
+			for (i = 0, len = data.length; i <= len-1; i++) {
+				htmlStr.push(tmpl( tpl , {value:data[i].replace(regExp, regTarget)} ));
+			}
+			$list.html(htmlStr.join(''));
+			t.show();
+
+			return t;
 		},
 		/**
 		 * show 显示suggest列表
@@ -219,9 +286,9 @@
 		 */
 		show : function(){
 			var t = this,
-				$list = t.El('list');
+				$sug = t.El('sug');
 			if(!t.isShow()){
-				$list.show();
+				$sug.show();
 			}
 			return t;
 		},
@@ -231,20 +298,20 @@
 		 */
 		hide : function(){
 			var t = this,
-				$list = t.El('list');
+				$sug = t.El('sug');
 			if(t.isShow()){
-				$list.hide();
+				$sug.hide();
 			}
 			return t;
 		},
 		/**
 		 * isShow 判断suggest列表是否显示
-		 * @return boolean{Boolean} 当前实例
+		 * @return boolean{Boolean} 布尔值
 		 */
 		isShow : function(){
 			var t = this,
-				$list = t.El('list');
-			return $list.is(':visible') ? TRUE : FALSE;
+				$sug = t.El('sug');
+			return $sug.is(':visible') ? TRUE : FALSE;
 		},
 
 		/*=================数据操作=====================*/
@@ -257,49 +324,139 @@
 			return this.El('input').val().trim();
 		},
 		/**
-		 * _getSuggestData 获取suggest数据(缓存或者请求)
+		 * _getRemoteData 通过远程请求获取数据
+		 * @param callback{Function} 回调函数
 		 * @return suggest{Suggest} 当前实例
 		 */
-		_getSuggestData : function(){
+		_getRemoteData : function( callback ){
 			var t = this,
-				kw = t._getKeyword();
+				url = t.config.requestUrl,
+				kw = t._getKeyword(),
+				queryKey = t.config.requestQueryKey,
+				param = t.config.requestParam,
+				cbKey = t.config.requestCallbackKey,
+				isCache = t.config.isCache,
+				cacheData,
+				cb;
 
-			if( kw ){
-				/* 有搜索关键字加载搜索数据 */
-			}else{
-				/* 没有关键字加载默认数据（历史记录） */
+			if ( isCache && (cacheData = t._cacheData[ kw ]) ) {
+				/* 使用缓存 */
+				callback( kw, _cacheData[ kw ], t.config.template.item );
+				return t;
 			}
 
-			return t;
+			/* 请求后回调函数名称 */
+			cb = 'zepto_suggest_'+(+new Date());
+
+			/* url添加query */
+			url = ( url + '?' + queryKey + '=' + encodeURIComponent( kw ) ).replace(/[&?]{1,2}/,'?');
+
+			/* url添加callback */
+			!~url.indexOf( cbKey ) && (url += '&'+ cbKey + '=' + cb);
+
+			/* url其他参数 */
+			param && (url += '&' + param);
+
+			/* jsonp的回调处理 */
+			win[ cb ] = function( data ){
+				/**
+				 * data为远程返回的数据
+				 * 格式：{q:'123',d:['1234','12345']}
+				 * q为查询的字符串，d为查询的结果数组
+				 */
+				/* 回调处理 */
+				callback.call( t , kw , data.s, t.config.template.item );
+				/* 缓存查询结果 */
+				isCache && t._cacheData( kw , data.d );
+				/* 移除window上的回调函数 */
+				delete win[ cb ];
+			};
+
+			/* jsonp请求 */
+			$.ajax({
+				url : url,
+				dataType : 'jsonp'
+			});
 		},
 		/**
-		 * _getRemoteData 通过远程请求获取数据
-		 * @return suggest{Suggest} 当前实例
-		 */
-		_getRemoteData : function(){
-			return this;
-		},
-		/**
-		 * _cacheData 对suggest请求数据进行缓存(对象存储)，操作(添加|删除|清空)
-		 * @param [key]{String} 索引
+		 * _cacheData 对suggest请求数据进行缓存(对象存储)，操作(获取|添加|清空)
+		 * @param [key]{String} 索引，NULL为清空操作
 		 * @param [value]{String} 值
-		 * @return [suggest{Suggest}|value{String}] 返回当前实例或者相应索引值
+		 * @return value{String} 返回当前实例或者相应索引值
 		 */
 		_cacheData : function( key , value ){
+			if ( key ) {
+				/* 获取|设置 */
+				return value !== undefined ? 
+						_cache[ key ] = value : 
+						_cache[ key ];
+			}
+			if ( key === NULL ) {
+				/* 清空 */
+				return _cache = {};
+			}
 		},
 		/**
 		 * _localData 对localstorage的操作(添加|删除|清空)，限定key值为this.localKey
 		 * @param [value]{String} 存储的值，NULL时为清空操作
-		 * @return [suggest{Suggest}|value{String}] 返回当前实例或者相应索引值
+		 * @return [suggest{Suggest}|value{Array}] 返回当前实例或者相应索引值
 		 */
 		_localData : function( value ){
+			var t = this,
+				key = t.config.localStorageKey,
+				separator = t.config.separator,
+				localstorage,
+				data,
+				idx,
+				i;
+
+			try{
+				localstorage = win.localStorage;
+				if (value === undefined) {
+					/* 获取localstorage */
+					return localstorage[ key ] ? localstorage[ key ].split( separator ) : [];
+				}else if (value === NULL) {
+					/* 清空localstorage */
+					localstorage[ key ] = '';
+				}else{
+					/* 设置localstorage */
+					data = localstorage[ key ] ?
+							localstorage[ key ].split( separator ) : [];
+
+					if (!~(idx = $.inArray(value , data))) {
+						/* value不存在已有记录中 */
+						data.unshift( value );
+						localstorage[ key ] = data.join( separator );
+					}else{
+						/* 已存在已有记录中调整顺序 */
+						for (i = idx; i > 0; i--) {
+							data[i] = data[i-1];
+						}
+						data[0] = value;
+						localstorage[ key ] = data.join( separator );
+					}
+
+				}
+			}catch(e){
+				console.log(e);
+			}
+
+			return t;
+
 		},
 		/**
-		 * history 对历史记录的操作(添加|删除|清空)
-		 * @param [value]{String} 存储的值，NULL时为清空操作
+		 * history 对历史记录的操作(获取|添加|清空)
+		 * @param [value]{String} 存储的值，NULL时为清空操作，undefined时为获取所有历史记录
 		 * @return [suggest{Suggest}|value{String}] 返回当前实例或者相应索引值
 		 */
 		history : function( value ){
+			var t = this,
+				clear = value !== NULL || function(){
+					return t._localData( value ).hide();
+				};
+			return value === NULL ? (t.config.confirmClearHistory ? 
+				win.confirm('清除全部历史记录？') && t._localData( value ) : 
+				t._localData( value ) ) : t._localData( value );
 		},
 
 		/*=================工具方法=====================*/
@@ -310,18 +467,19 @@
 		 * @param [value]{String} 值
 		 * @return [zepto{Zepto}] 返回相应元素
 		 */
-		function El( key , value ){
+		El : function( key , value ){
 			var t = this;
 			if ( value ) {
 				/* 设置元素值 */
-				t.config.elements[key] = value;
-				return t.config.elements[key];
+				return (t.config.elements[key] = value);
 			}else{
 				/* 获取元素值 */
-				return $(t.config.elements[key]);
+				return t.config.elements[key];
 			}
 		}
 
-	}
+	};
+
+	win.Suggest = Suggest;
 })(Zepto, window);
 
