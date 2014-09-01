@@ -347,9 +347,9 @@
 				cacheData,
 				cb;
 
-			if ( isCache && (cacheData = t._cacheData[ kw ]) ) {
+			if ( isCache && (cacheData = t._cacheData(kw) ) ) {
 				/* 使用缓存 */
-				callback( kw, _cacheData[ kw ], t.config.template.item );
+				callback.call( t, kw, cacheData, t.config.template.item );
 				return t;
 			}
 
@@ -369,13 +369,13 @@
 			win[ cb ] = function( data ){
 				/**
 				 * data为远程返回的数据
-				 * 格式：{q:'123',d:['1234','12345']}
+				 * 格式：{q:'123',s:['1234','12345']}
 				 * q为查询的字符串，d为查询的结果数组
 				 */
 				/* 回调处理 */
 				callback.call( t , kw , data.s, t.config.template.item );
 				/* 缓存查询结果 */
-				isCache && t._cacheData( kw , data.d );
+				isCache && t._cacheData( kw , data.s );
 				/* 移除window上的回调函数 */
 				delete win[ cb ];
 			};
