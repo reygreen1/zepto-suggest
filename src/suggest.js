@@ -77,6 +77,10 @@
     							'<span class="sug-plus"></span>'+
     						'</div>'
 				},
+				/* suggest显示的最大数目 */
+				suggestMaxNum : 5,
+				/* history显示的最大数目 */
+				historyMaxNum : 10,
 				/* 是否选择快速删除按钮 */
 				showQuickDel : TRUE,
 				/* 远程加载数据的接口url */
@@ -91,8 +95,10 @@
 				renderDelayTime : 300,
 				/* 是否显示input框快速删除按钮 */
 				showQuickDel : TRUE,
+				/* localstorage关键字 */
+				localStorageKey : 'zepto_suggest',
 				/* localstorage分隔符 */
-				localStorageKey : ',',
+				localStorageSeparator : ',',
 				/* 清除历史记录是否提示确认框 */
 				confirmClearHistory : TRUE,
 				/* 是否缓存请求的查询结果 */
@@ -162,10 +168,11 @@
 		_bindEvent : function(){
 			var t = this,
 				$input = t.El('input'),
+				$form = t.El('form'),
 				$history = t.El('history'),
 				$close = t.El('close'),
 				$quickdel = t.El('quickdel'),
-				$list = t.El('list');
+				$sug = t.El('sug');
 			/* input的相关事件绑定 */
 			$input.on('focus',function(){
 				!t.isShow() && t._renderList();
@@ -177,6 +184,12 @@
 			/* 历史记录 */
 			$history.on('click',function(){
 				t.history(NULL);
+			});
+
+			/* form提交 */
+			$form.on('submit',function(e){
+				/* 存入历史记录 */
+				t.history($input.val());
 			});
 
 			/* 关闭按钮 */
@@ -201,10 +214,17 @@
 			}
 
 			/* 快速复制按钮 */
-			$list.delegate('.sug-plus','click',function(e){
-				e.stopPropagation();
-				$input.val($(this).closet('.sug-item').data('item'));
+			$sug.delegate('.sug-plus','touchend',function(e){
+				$input.val($(this).closest('.sug-item').data('item'));
 				$input.trigger('focus');
+				e.preventDefault();
+                e.stopPropagation();
+			});
+
+			/* suggest条目点击 */
+			$sug.delegate('.sug-item','click',function(e){
+				$(this).find('.sug-plus').trigger('touchend');
+				$form.submit();
 			});
 
 			return t;
@@ -236,6 +256,7 @@
 		 */
 		_renderList : function(){
 			var t = this,
+				$history = t.El('history'),
 				kw;
 
 			win.clearTimeout(t.renderTimeout);
@@ -243,9 +264,11 @@
 				kw = t._getKeyword();
 				if( kw ){
 					/* 加载远程数据 */
+					$history.hide();
 					t._getRemoteData( t._renderSuggestList );
 				}else{
 					/* 没有关键字加载默认数据（历史记录） */
+					$history.show();
 					t._renderSuggestList( kw , t.history() , t.config.template.history );
 				}
 			}, t.renderDelayTime);
@@ -261,18 +284,23 @@
 		 */
 		_renderSuggestList : function( kw , data , tpl ){
 			var t = this,
+				curKw = t._getKeyword(),
 				$list = t.El('list'),
+				sugMaxNum = t.config.suggestMaxNum,
 				htmlStr = [],
 				regExp = '/'+kw+'/g',
 				regTarget = '<i>'+kw+'</i>',
 				i,len;
+
+			/* 更新列表前如果发现获取的kw和当前inupt中的kw不一致，则不更新list */
+			if(curKw!=kw){return t;}
 
 			if( !data || !data.length ){
 				t.hide();
 				return t;
 			}
 
-			for (i = 0, len = data.length; i <= len-1; i++) {
+			for (i = 0, len = data.length; (i <= len-1)&&(i < sugMaxNum); i++) {
 				htmlStr.push(tmpl( tpl , {value:data[i].replace(regExp, regTarget)} ));
 			}
 			$list.html(htmlStr.join(''));
@@ -404,7 +432,8 @@
 		_localData : function( value ){
 			var t = this,
 				key = t.config.localStorageKey,
-				separator = t.config.separator,
+				separator = t.config.localStorageSeparator,
+				historyMaxNum = t.config.historyMaxNum,
 				localstorage,
 				data,
 				idx,
@@ -425,6 +454,10 @@
 
 					if (!~(idx = $.inArray(value , data))) {
 						/* value不存在已有记录中 */
+						if(data.length >= historyMaxNum){
+							/* 历史记录控制在最大数目内 */
+							data = data.slice(0, historyMaxNum-1);
+						}
 						data.unshift( value );
 						localstorage[ key ] = data.join( separator );
 					}else{
@@ -450,10 +483,7 @@
 		 * @return [suggest{Suggest}|value{String}] 返回当前实例或者相应索引值
 		 */
 		history : function( value ){
-			var t = this,
-				clear = value !== NULL || function(){
-					return t._localData( value ).hide();
-				};
+			var t = this;
 			return value === NULL ? (t.config.confirmClearHistory ? 
 				win.confirm('清除全部历史记录？') && t._localData( value ) : 
 				t._localData( value ) ) : t._localData( value );
