@@ -6,12 +6,9 @@
  */
 (function($, win, undefined){
 	/* 全局标识 */
-	var guid  = 0,
-		TRUE  = true,
+	var TRUE  = true,
 		FALSE = false,
 		NULL  = null;
-
-	var CustEvents = ['afterInitDom'];
 
 	/* 请求结果缓存，多实例可共用 */
 	var _cache = {},
@@ -229,23 +226,6 @@
 
 			return t;
 		},
-
-		/*=================自定义事件=====================*/
-		/*_inputControll : function(){
-			var t = this,
-				$input = t.El('input');
-
-			$intput.on('inputfocus',function(e){
-
-			});
-		},
-		_suggestControll : function(){
-			var t = this,
-				$list = t.El('list');
-			$list.on('sugshow',function(){
-
-			});
-		}*/
 
 		/*=================视图操作=====================*/
 
