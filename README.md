@@ -20,7 +20,7 @@ Zepto-Suggest是一个基于Zepto的suggest组件，它为移动端的搜索框�
 
 ## 基础用例
 
-src目录下有一个suggest的html文件，展示了组件的功能示例，它默认调用的是业务中配置，实例化使用了gmu的suggest数据接口，查询结果跳转的是[360搜索](http://www.so.com/)的搜索结果页。
+src目录下有一个suggest的html文件，展示了组件的功能示例，它默认调用的是业务中配置，实例化使用了gmu的suggest数据接口，查询结果跳转的是[so.com](http://www.so.com/)的搜索结果页。
 
 简单用法：
 

@@ -1,6 +1,6 @@
 /**
  * suggest.js	搜索建议组件
- * @authors guorui (guorui@360.cn)
+ * @authors guorui (reygreen1@163.com)
  * @date    2014-08-26 15:10:02
  * @version 1.0.2
  */
