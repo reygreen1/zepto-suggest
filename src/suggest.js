@@ -2,28 +2,47 @@
  * suggest.js	搜索建议组件
  * @authors guorui (guorui@360.cn)
  * @date    2014-08-26 15:10:02
- * @version 1.0.0
+ * @version 1.0.2
  */
 (function($, win, undefined){
-	/* 全局标识 */
-	var TRUE  = true,
-		FALSE = false,
-		NULL  = null;
 
 	/* 请求结果缓存，多实例可共用 */
 	var _cache = {},
 	/* 公共方法 */
 	htmlEscape = function(s) {
-        if(s == NULL) return '';
+        if(s == null) return '';
         s = s + '';
         return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, "&#39;");
     },
+    /* 获取数组或者对象指定路径下的取值 */
+    getPathData = function (data , path){
+		var type = $.type(data),
+			path = path + '',
+			dirs = path.split('.'),
+			dir;
+		/* 非数组或者非对象的data不处理 */
+		if(!(type=='array') && !(type=='object')){return 'error data';}
+		if(path == 'undefined'){return 'error path';}
+
+		while(dir = dirs.shift()){
+			if(data[dir]){
+				data = data[dir];
+			}else{
+				return null;
+			}
+		}
+		return data;
+	},
 	tmpl = function (tplStr, data) {
-        return tplStr.replace(/{([^}]*)}/g, function ($0, $1) {
-            return data[$1] == NULL ? '' : htmlEscape(data[$1]);
+		/**
+		 * 一般模板替换时data为一个对象或者数组，这样在模板中可以通过制定path来获取相应值，从而个性化渲染模板，但也有可能传入data为string，如历史记录中的情况，这时把它包装成数组，便于在history模板中定制输出
+		 */
+		if($.type(data) == 'string'){data = [data]}
+
+        return tplStr.replace(/{([^}]*?)}/g, function ($0, $1) {
+            return data[$1] == null ? '' : htmlEscape(getPathData(data,$1));
         });
     };
-    
 
 	function Suggest( conf ){
 		this._init( conf );
@@ -41,17 +60,17 @@
 			var D_conf = {
 				elements : {
 					/* 放置suggest的wrap */
-					wrap : NULL,
+					wrap : null,
 					/* 输入框 */
-					input : NULL,
+					input : null,
 					/* 要提交的form表单 */
-					form : NULL,
+					form : null,
 					/* 清空历史记录的按钮 */
-					history : NULL,
+					history : null,
 					/* 关闭suggest列表的按钮 */
-					close : NULL,
+					close : null,
 					/* 快速删除按钮 */
-					quickdel : NULL
+					quickdel : null
 				},
 				template : {
 					/* suggest提示框结构模板 */
@@ -64,13 +83,13 @@
 		    					'</div>'+
 		    				'</div>',
 					/* 每条结果结构模板 */
-					item : '<div class="sug-item" data-item="{value}">'+
-    							'{value}'+
+					item : '<div class="sug-item" data-item="{0}">'+
+    							'{0}<i>{1}</i>'+
     							'<span class="sug-plus"></span>'+
     						'</div>',
-					/* 历史记录结构模板 */
-					history : '<div class="sug-item" data-item="{value}">'+
-    							'{value}'+
+					/* 历史记录结构模板,历史记录里的变量固定为path:0 */
+					history : '<div class="sug-item" data-item="{0}">'+
+    							'{0}'+
     							'<span class="sug-plus"></span>'+
     						'</div>'
 				},
@@ -79,29 +98,30 @@
 				/* history显示的最大数目 */
 				historyMaxNum : 10,
 				/* 是否选择快速删除按钮 */
-				showQuickDel : TRUE,
+				showQuickDel : true,
 				/* 远程加载数据的接口url */
-				requestUrl : 'http://gmu.baidu.com/demo/data/suggestion.php',
+				requestUrl : 'http://suggest.h.qhimg.com/index.php',
 				/* 请求url中query字符串的键值，如"&kw=123"中的kw，通过它可以灵活适配服务端接口*/
-				requestQueryKey : 'wd',
+				requestQueryKey : 'word',
 				/* 请求url中callback回调的键值，如"&cb=zepto_suggest_123"中的cb，通过它可以灵活适配服务端接口*/
 				requestCallbackKey : 'cb',
 				/* 请求url中需要额外添加的参数， 通过它可以灵活适配服务端接口*/
-				requestParam : NULL,
+				requestParam : 'biz=xiaoshuo_wap&fmt=jsonp',
+				/* response数据中所需遍历数据的路径,使用.来分割，类似从{a:['ha']}中通过path:'a.1'来获取ha */
+				responseDataPath : '',
 				/* 数据请求处理的间隔时间 */
 				renderDelayTime : 300,
 				/* 是否显示input框快速删除按钮 */
-				showQuickDel : TRUE,
+				showQuickDel : true,
 				/* localstorage关键字 */
 				localStorageKey : 'zepto_suggest',
 				/* localstorage分隔符 */
 				localStorageSeparator : ',',
 				/* 清除历史记录是否提示确认框 */
-				confirmClearHistory : TRUE,
+				confirmClearHistory : true,
 				/* 是否缓存请求的查询结果 */
-				isCache : TRUE
-			};
-			this.config = $.extend( TRUE , D_conf , U_conf );
+				isCache : true			};
+			this.config = $.extend( true , D_conf , U_conf );
 			/* 初始化DOM */
 			this._initDom();
 			/* 初始化事件绑定 */
@@ -121,7 +141,7 @@
 				$form = t.El('form'),
 				sugTmpl = t.config.template.sug,
 				sugList,
-				sugClassTop = NULL;
+				sugClassTop = null;
 
 			/* 输入框 */
 			!$input && ($input = t.El('input',$('#input')));
@@ -146,9 +166,9 @@
 			t.config.showQuickDel && ($input.parent().append(t.El('quickdel',$('<div class="sug-quickdel"></div>'))));
 
 			/* suggest list */
-			t.El('sug',$wrap.find('.sug'));
+			$sug = t.El('sug',$wrap.find('.sug'));
 			$sugList = t.El('list',$wrap.find('.sug-list'));
-			sugClassTop && $sugList.css('top',sugClassTop);
+			sugClassTop && $sug.css('top',sugClassTop);
 
 			/* 按钮 */
 			t.El('history',$wrap.find('.sug-clear'));
@@ -180,7 +200,7 @@
 
 			/* 历史记录 */
 			$history.on('click',function(){
-				t.history(NULL);
+				t.history(null);
 			});
 
 			/* form提交 */
@@ -196,18 +216,18 @@
 
 			/* 快速删除按钮 */
 			if(t.config.showQuickDel){
-				$quickdel.on('click',function(){
-					$input.val('');
-					$(this).hide();
-					$input.trigger('focus');
-				});
-				$input.on('focus',function(){
+				var handleDelBtn = function(){
 					if($input.val()){
 						$quickdel.show();
 					}else{
 						$quickdel.hide();
 					}
+				};
+				$quickdel.on('click',function(){
+					$input.val('').trigger('input');
+					$(this).hide();
 				});
+				$input.on('focus blur input',handleDelBtn);
 			}
 
 			/* 快速复制按钮 */
@@ -268,8 +288,6 @@
 				$list = t.El('list'),
 				sugMaxNum = t.config.suggestMaxNum,
 				htmlStr = [],
-				regExp = '/'+kw+'/g',
-				regTarget = '<i>'+kw+'</i>',
 				i,len;
 
 			/* 更新列表前如果发现获取的kw和当前inupt中的kw不一致，则不更新list */
@@ -281,7 +299,7 @@
 			}
 
 			for (i = 0, len = data.length; (i <= len-1)&&(i < sugMaxNum); i++) {
-				htmlStr.push(tmpl( tpl , {value:data[i].replace(regExp, regTarget)} ));
+				htmlStr.push(tmpl( tpl , data[i] ));
 			}
 			$list.html(htmlStr.join(''));
 			t.show();
@@ -319,7 +337,7 @@
 		isShow : function(){
 			var t = this,
 				$sug = t.El('sug');
-			return $sug.is(':visible') ? TRUE : FALSE;
+			return $sug.is(':visible');
 		},
 
 		/*=================数据操作=====================*/
@@ -366,16 +384,22 @@
 			param && (url += '&' + param);
 
 			/* jsonp的回调处理 */
-			win[ cb ] = function( data ){
+			win[ cb ] = function( res ){
 				/**
-				 * data为远程返回的数据
-				 * 格式：{q:'123',s:['1234','12345']}
+				 * res为远程返回的完整数据
+				 * 格式：{q:'123',d:['1234','12345']}
 				 * q为查询的字符串，d为查询的结果数组
 				 */
+				 /**
+				 * data为需要遍历的结果数组
+				 * 格式（res中的d）：['1234','12345']
+				 * 使用getPathData的方法是为了从res中获取d，这样通过配置可以适应各种接口数据结构
+				 */
+				var data = getPathData(res , t.config.responseDataPath);
 				/* 回调处理 */
-				callback.call( t , kw , data.s, t.config.template.item );
+				callback.call( t , kw , data, t.config.template.item );
 				/* 缓存查询结果 */
-				isCache && t._cacheData( kw , data.s );
+				isCache && t._cacheData( kw , data );
 				/* 移除window上的回调函数 */
 				delete win[ cb ];
 			};
@@ -388,7 +412,7 @@
 		},
 		/**
 		 * _cacheData 对suggest请求数据进行缓存(对象存储)，操作(获取|添加|清空)
-		 * @param [key]{String} 索引，NULL为清空操作
+		 * @param [key]{String} 索引，null为清空操作
 		 * @param [value]{String} 值
 		 * @return value{String} 返回当前实例或者相应索引值
 		 */
@@ -399,14 +423,14 @@
 						_cache[ key ] = value : 
 						_cache[ key ];
 			}
-			if ( key === NULL ) {
+			if ( key === null ) {
 				/* 清空 */
 				return _cache = {};
 			}
 		},
 		/**
 		 * _localData 对localstorage的操作(添加|删除|清空)，限定key值为this.localKey
-		 * @param [value]{String} 存储的值，NULL时为清空操作
+		 * @param [value]{String} 存储的值，null时为清空操作
 		 * @return [suggest{Suggest}|value{Array}] 返回当前实例或者相应索引值
 		 */
 		_localData : function( value ){
@@ -424,7 +448,7 @@
 				if (value === undefined) {
 					/* 获取localstorage */
 					return localstorage[ key ] ? localstorage[ key ].split( separator ) : [];
-				}else if (value === NULL) {
+				}else if (value === null) {
 					/* 清空localstorage */
 					localstorage[ key ] = '';
 				}else{
@@ -459,14 +483,14 @@
 		},
 		/**
 		 * history 对历史记录的操作(获取|添加|清空)
-		 * @param [value]{String} 存储的值，NULL时为清空操作，undefined时为获取所有历史记录
+		 * @param [value]{String} 存储的值，null时为清空操作，undefined时为获取所有历史记录
 		 * @return [suggest{Suggest}|value{String}] 返回当前实例或者相应索引值
 		 */
 		history : function( value ){
 			var t = this;
-			return value === NULL ? (t.config.confirmClearHistory ? 
-				win.confirm('清除全部历史记录？') && t._localData( value ) : 
-				t._localData( value ) ) : t._localData( value );
+			return value === null ? (t.config.confirmClearHistory ? 
+				win.confirm('清除全部历史记录？') && t._localData( value ).hide() : 
+				t._localData( value ) ).hide() : t._localData( value );
 		},
 
 		/*=================工具方法=====================*/
@@ -492,4 +516,3 @@
 
 	win.Suggest = Suggest;
 })(Zepto, window);
-

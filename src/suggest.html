@@ -44,7 +44,6 @@
 	.sug{
 		display: none;
 		position: absolute;
-		top: 40px;
 		left: 0;
 		width: 100%;
 		-webkit-box-sizing:border-box;
@@ -96,7 +95,8 @@
 		width: 20px;
 		height: 20px;
 		padding: 10px;
-		background: url() no-repeat;
+		background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAiCAYAAAA6RwvCAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAvNJREFUeNrMmL+PEkEUx4fFAw5EbfQChMJAAZqcxuYaG3ONOe1stDfxP/AsLU8b/QO0viu0O43NxUZjaC6G5AKBvRgCzXEUePJ7IfE98nZvWHZmhx9rfMm3Yd7M+7DzZubN+HK5HPsf7MKM/hdBD0D3QLdB10GXqe036BfoJ+gr6BOotWyQNGgb9AQUEfhcI22AnoHaoF3QK5DuFkBzaQ+BdkBHoKcSCCeLUJ8jggnNC5IC/aAvEVhg+rHvcxorPSvIHdB3yoNlGY71jcZWAkHqL6A1DxbHGo2ddgNZBX0AXfVwpeLYHymWEOQl6NY/2DbWKZZlPm5Dw+QsgFbsvWKxGEskEqzb7bJyucwGg4E8OwMBlkqlWDgcZtVqldXrdSc3A3TDXNr8F3nhBIEWj8eZpmksEomwbDY7DiSDyGQyLBqNMr/fz5LJpMh1hWJOTE2UNitHwy9hWjAYFMKYEKHQ+ZbRbrdlH+8xxbZAtmSbla7rrNfrSWGcIPAPYF+XTW+LB9mUeWNOFItFIYwIolAosOFw6Ja4mzzIupu3DMYJAn0VIKzYGrdi2LwwThCGYagu5RQPckm1F8LgJ+dhTMPfZoSwYmvz7EY+n0/4u6hNtQw4Uz5KHRJTZWlL7IwHOZ4XAqdDdZ8R2DEPkleBwAB2CMwJ1AIweR7kQAUCA9ghMHkxOReAOeBBPlON6VywptNCCOsEAxhcTZ1OZwIGDz+JdSi2BfIHtCfyXl09Lx36/f4UhGm4gWGbHUZiuxR7Yvnu0NE8ZZVKhY1GI9Zqtcb/WlYGmDDNZnPsV6vVRK4GFdVT1wk8nd5QoTthjUZjLFVDmFKp5Ob2FlSWVWh55r3l7RWaHQTT/hHo1EOIU4rRcavicYrug048gDihsXXVe80h6O6SpylPYx7OetPT6R77WrSaFM2gMTZkd2C307dHV86boHf2eXUxzLf31HebxhKf6DO+j+CzxEPbs8QVamvaniX2vXiWMK1FO/DesrP4rwADAKUsNqKpueWJAAAAAElFTkSuQmCC) center center no-repeat;
+	background-size: 20px 20px;
 	}
 	.search-button{
 		border: 1px solid #84b890;
@@ -127,7 +127,19 @@
     <script src="http://s6.qhimg.com/!3133b89a/zepto.js"></script>
     <script type="text/javascript" src="./suggest.js"></script>
     <script type="text/javascript">
-			var sug = new Suggest();
+			var sug = new Suggest({
+				template : {
+					item : '<div class="sug-item" data-item="{0}">'+
+    							'{0}'+
+    							'<span class="sug-plus"></span>'+
+    						'</div>'
+				},
+				requestUrl : 'http://gmu.baidu.com/demo/data/suggestion.php',
+				requestQueryKey : 'wd',
+				requestCallbackKey : 'cb',
+				requestParam : null,
+				responseDataPath : 's',
+			});
     </script>
 </body>
 </html>
