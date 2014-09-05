@@ -2,7 +2,7 @@
  * suggest.js	搜索建议组件
  * @authors guorui (reygreen1@163.com)
  * @date    2014-08-26 15:10:02
- * @version 1.0.2
+ * @version 1.1.0
  */
 (function($, win, undefined){
 
@@ -93,12 +93,14 @@
     							'<span class="sug-plus"></span>'+
     						'</div>'
 				},
+				/* 是否显示input框快速删除按钮 */
+				showQuickDel : true,
+				/* 点击页面其他位置时，是否自动隐藏列表 */
+				listAutoHide : true,
 				/* suggest显示的最大数目 */
 				suggestMaxNum : 5,
 				/* history显示的最大数目 */
 				historyMaxNum : 10,
-				/* 是否选择快速删除按钮 */
-				showQuickDel : true,
 				/* 远程加载数据的接口url */
 				requestUrl : 'http://suggest.h.qhimg.com/index.php',
 				/* 请求url中query字符串的键值，如"&kw=123"中的kw，通过它可以灵活适配服务端接口*/
@@ -111,8 +113,6 @@
 				responseDataPath : '',
 				/* 数据请求处理的间隔时间 */
 				renderDelayTime : 300,
-				/* 是否显示input框快速删除按钮 */
-				showQuickDel : true,
 				/* localstorage关键字 */
 				localStorageKey : 'zepto_suggest',
 				/* localstorage分隔符 */
@@ -243,6 +243,17 @@
 				$(this).find('.sug-plus').trigger('touchend');
 				$form.submit();
 			});
+
+			/* 点击页面其他区域，列表自动隐藏 */
+			if (t.config.listAutoHide) {
+				$(document).on('click',function(e){
+					t.hide();
+				});
+				$form.on('click',function(e){
+					$input.focus();
+					e.stopPropagation();
+				});
+			}
 
 			return t;
 		},
