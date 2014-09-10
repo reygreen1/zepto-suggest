@@ -2,7 +2,7 @@
  * suggest.js	搜索建议组件
  * @authors guorui (reygreen1@163.com)
  * @date    2014-08-26 15:10:02
- * @version 1.1.0
+ * @version 1.1.1
  */
 (function($, win, undefined){
 
@@ -463,6 +463,10 @@
 					/* 清空localstorage */
 					localstorage[ key ] = '';
 				}else{
+					/* 空值不存储 */
+					if( !value ){
+						return t;
+					}
 					/* 设置localstorage */
 					data = localstorage[ key ] ?
 							localstorage[ key ].split( separator ) : [];
