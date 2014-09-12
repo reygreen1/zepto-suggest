@@ -2,7 +2,7 @@
  * suggest.js	搜索建议组件
  * @authors guorui (reygreen1@163.com)
  * @date    2014-08-26 15:10:02
- * @version 1.1.1
+ * @version 1.1.2
  */
 (function($, win, undefined){
 
@@ -210,8 +210,9 @@
 			});
 
 			/* 关闭按钮 */
-			$close.on('click',function(){
+			$close.on('click',function(e){
 				t.hide();
+				e.stopPropagation();
 			});
 
 			/* 快速删除按钮 */
