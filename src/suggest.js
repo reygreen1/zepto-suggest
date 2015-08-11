@@ -2,7 +2,7 @@
  * suggest.js	搜索建议组件
  * @authors guorui (reygreen1@163.com)
  * @date    2014-08-26 15:10:02
- * @version 1.1.2
+ * @version 1.2.0
  */
 (function($, win, undefined){
 
@@ -47,6 +47,8 @@
 	function Suggest( conf ){
 		this._init( conf );
 	}
+
+	Suggest.Version = '1.2.0';
 
 	Suggest.prototype = {
 		/* 更正构造函数 */
@@ -156,6 +158,7 @@
 			}else{
 				/* wrap不存在，默认在input后放置一个suggest list */
 				$input.wrap($wrap = $('<div class="sug-mask"></div>'));
+				$wrap = $input.closest('.sug-mask');
 				t.El('wrap',$wrap);
 				$wrap.css({'position':'relative'});
 				sugClassTop = $input.height() + (parseInt( $wrap.css( 'top' ), 10 ) || 0);
@@ -531,4 +534,4 @@
 	};
 
 	win.Suggest = Suggest;
-})(Zepto, window);
+})(Zepto || jQuery, window);
