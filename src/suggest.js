@@ -2,7 +2,7 @@
  * suggest.js	搜索建议组件
  * @authors guorui (reygreen1@163.com)
  * @date    2014-08-26 15:10:02
- * @version 1.2.0
+ * @version 1.2.1
  */
 (function($, win, undefined){
 
@@ -48,7 +48,7 @@
 		this._init( conf );
 	}
 
-	Suggest.Version = '1.2.0';
+	Suggest.Version = '1.2.1';
 
 	Suggest.prototype = {
 		/* 更正构造函数 */
@@ -534,4 +534,4 @@
 	};
 
 	win.Suggest = Suggest;
-})(Zepto || jQuery, window);
+})(window.Zepto || window.jQuery, window);
